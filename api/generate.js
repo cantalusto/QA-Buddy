@@ -1,20 +1,45 @@
-// api/generate.js
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// A função exportada é o que a Vercel vai executar
+/**
+ * Função auxiliar para extrair o primeiro objeto JSON completo de uma string.
+ * Ela lida com casos onde a IA adiciona texto antes ou depois do JSON.
+ * @param {string} str - A string que pode conter o JSON.
+ * @returns {string|null} - A string JSON extraída ou null se não for encontrada.
+ */
+function extractJsonFromString(str) {
+  const startIndex = str.indexOf('{');
+  if (startIndex === -1) {
+    return null; // Não encontrou o início de um JSON
+  }
+
+  let bracketCount = 0;
+  for (let i = startIndex; i < str.length; i++) {
+    if (str[i] === '{') {
+      bracketCount++;
+    } else if (str[i] === '}') {
+      bracketCount--;
+    }
+
+    if (bracketCount === 0) {
+      // Encontrou o JSON completo
+      return str.substring(startIndex, i + 1);
+    }
+  }
+
+  return null; // JSON incompleto na string
+}
+
+
+// A função principal que a Vercel vai executar
 export default async function handler(req, res) {
-  // Permitir requisições de qualquer origem (CORS)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // O Vercel lida com requisições OPTIONS automaticamente para CORS
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Só permitir o método POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -41,7 +66,7 @@ export default async function handler(req, res) {
     ${languageContext}
     REQUISITOS DE SAÍDA:
     - Para cada teste, forneça: id, title, steps, e expectedResult.
-    - CRÍTICO: Sua resposta DEVE ser APENAS o objeto JSON, sem nenhum texto ou formatação.
+    - CRÍTICO: Sua resposta DEVE ser APENAS o objeto JSON, sem nenhum texto introdutório, sem explicações e sem formatação de markdown como \`\`\`json.
   `;
 
   try {
@@ -49,17 +74,21 @@ export default async function handler(req, res) {
     const response = await result.response;
     const text = response.text();
     
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("A resposta da IA não continha um formato JSON reconhecível.");
+    // **AQUI ESTÁ A CORREÇÃO**
+    // Usamos nossa nova função para extrair apenas o JSON da resposta.
+    const cleanJsonText = extractJsonFromString(text);
+
+    if (!cleanJsonText) {
+      console.error("Resposta da IA não continha um JSON extraível:", text);
+      throw new Error("Não foi possível extrair um JSON válido da resposta da IA.");
     }
-    const cleanJsonText = jsonMatch[0];
+
     const parsedJson = JSON.parse(cleanJsonText);
     
-    // Envia a resposta de sucesso
     return res.status(200).json(parsedJson);
 
   } catch (error) {
+    // Este log agora será mais útil na Vercel
     console.error('Erro na Serverless Function:', error);
     return res.status(500).json({ error: error.message || 'Falha ao se comunicar com a API do Gemini.' });
   }
