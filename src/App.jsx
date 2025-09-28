@@ -63,7 +63,9 @@ function App() {
     setTestCases(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/generate', {
+      // --- MUDANÇA IMPORTANTE AQUI ---
+      // A URL foi alterada para um caminho relativo, que funciona na Vercel
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,8 +108,6 @@ function App() {
           </p>
         </div>
 
-        {/* --- CORREÇÃO DE LAYOUT AQUI --- */}
-        {/* Usamos flexbox para empilhar e dar espaçamento entre os campos */}
         <div className="flex flex-col gap-4">
             <div>
                 <label htmlFor="feature" className="block text-sm font-medium text-cyan-400 mb-2">
@@ -129,7 +129,6 @@ function App() {
                 <input
                     id="language"
                     type="text"
-                    // Removi a altura fixa para um layout mais consistente
                     className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg focus:ring-2 focus:ring-cyan-500 transition-all placeholder-gray-500"
                     placeholder="Ex: JavaScript, Jest, Python, PyTest, C#"
                     value={language}
@@ -137,7 +136,6 @@ function App() {
                 />
             </div>
         </div>
-        {/* --- FIM DA CORREÇÃO --- */}
 
         <button
           onClick={generateTests}
