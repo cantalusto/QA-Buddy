@@ -102,7 +102,8 @@ function App() {
             <Bot size={28} className="text-cyan-400" />
             <h1 className="text-3xl font-bold text-gray-100">QA Buddy</h1>
           </div>
-          <p className="text-gray-400">Descreva uma funcionalidade e o contexto para gerar casos de teste estruturados.</p>
+          <p className="text-gray-400">Descreva uma funcionalidade e o contexto para gerar casos de teste estruturados.<br></br>A ia pode demorar um pouco para responder, dependendo da fila de requisições.  (max de 1min)
+          </p>
         </div>
 
         {/* --- CORREÇÃO DE LAYOUT AQUI --- */}
@@ -179,7 +180,7 @@ function App() {
           </div>
         )}
       </div>
-      <footer className="text-center mt-8 text-gray-500 text-sm"><p>Arquitetura com Frontend (React) + Backend (Express.js).</p></footer>
+      <footer className="text-center mt-8 text-gray-500 text-sm"><p>Arquitetura com Frontend (React + Vite) + Backend (Express.js).</p></footer>
     </div>
   );
 }
