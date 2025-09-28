@@ -1,3 +1,5 @@
+// api/generate.js
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
@@ -46,27 +48,44 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "A chave da API não foi configurada no ambiente Vercel." });
+    return res.status(500).json({ error: "A chave da API não foi configurada." });
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-05-20' });
 
   const { featureDescription, language } = req.body;
-
   if (!featureDescription) {
-    return res.status(400).json({ error: 'A descrição da funcionalidade é obrigatória.' });
+    return res.status(400).json({ error: 'A descrição é obrigatória.' });
   }
 
-  const languageContext = language ? `Contexto da Linguagem/Framework: "${language}". Adapte os exemplos e a sintaxe para este ecossistema.` : '';
+  const languageContext = language ? `Contexto da Linguagem/Framework: "${language}". Adapte a sintaxe para este ecossistema.` : '';
 
   const prompt = `
     Aja como um Engenheiro de QA Sênior.
-    Especificação: """${featureDescription}"""
+    Sua tarefa é criar casos de teste com base na descrição de uma funcionalidade.
+
+    DESCRIÇÃO: """${featureDescription}"""
     ${languageContext}
+
     REQUISITOS DE SAÍDA:
-    - Para cada teste, forneça: id, title, steps, e expectedResult.
-    - CRÍTICO: Sua resposta DEVE ser APENAS o objeto JSON, sem nenhum texto introdutório, sem explicações e sem formatação de markdown como \`\`\`json.
+    1.  Crie casos de teste para TRÊS categorias: 'unit', 'integration', e 'e2e'.
+    2.  Para cada teste, forneça: id, title, steps, e expectedResult.
+    3.  A saída DEVE ser um objeto JSON válido, seguindo o exemplo abaixo.
+    4.  NÃO inclua nenhum texto, explicação ou formatação markdown como \`\`\`json fora do objeto JSON.
+
+    EXEMPLO DO FORMATO JSON DE SAÍDA:
+    {
+      "unit": [
+        { "id": "UNIT-01", "title": "Exemplo de Título Unitário", "steps": "Passos do teste.", "expectedResult": "Resultado esperado." }
+      ],
+      "integration": [
+        { "id": "INT-01", "title": "Exemplo de Título de Integração", "steps": "Passos do teste.", "expectedResult": "Resultado esperado." }
+      ],
+      "e2e": [
+        { "id": "E2E-01", "title": "Exemplo de Título E2E", "steps": "Passos do teste.", "expectedResult": "Resultado esperado." }
+      ]
+    }
   `;
 
   try {
@@ -74,22 +93,17 @@ export default async function handler(req, res) {
     const response = await result.response;
     const text = response.text();
     
-    // **AQUI ESTÁ A CORREÇÃO**
-    // Usamos nossa nova função para extrair apenas o JSON da resposta.
     const cleanJsonText = extractJsonFromString(text);
-
     if (!cleanJsonText) {
       console.error("Resposta da IA não continha um JSON extraível:", text);
       throw new Error("Não foi possível extrair um JSON válido da resposta da IA.");
     }
 
     const parsedJson = JSON.parse(cleanJsonText);
-    
     return res.status(200).json(parsedJson);
 
   } catch (error) {
-    // Este log agora será mais útil na Vercel
     console.error('Erro na Serverless Function:', error);
-    return res.status(500).json({ error: error.message || 'Falha ao se comunicar com a API do Gemini.' });
+    return res.status(500).json({ error: error.message || 'Falha ao se comunicar com a API.' });
   }
 }
